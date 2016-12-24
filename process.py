@@ -1,6 +1,7 @@
 import base64
 from html.parser import HTMLParser
 import codecs
+import re as regex
 
 # one-liner to remove a prefix from a string
 # eg turn 'file_100.jpg' into '100.jpg' by removing 'file_'
@@ -37,18 +38,35 @@ class emoji_parser(HTMLParser):
 
     def write_images(self, prefix):
         # go through image_data and do the actual outputting
-        # strip out potentially problematic characters
+        # list of tuples for replacing potentially problematic characters
         # i AM keeping a lot of diacritics in for things like "São Tomé"
-        prefix = prefix.replace(' ', '_').replace('&', 'and').replace(',', '').replace(':', '').replace('*', 'asterisk').replace('#', 'pound').replace('“', '').replace('”', '').replace('.', '')
+        # this is better than a chained call of like 20 .replace()s
+        replacements = [
+            (' ', '_'),
+            ('&', 'and'),
+            ('*', 'asterisk'),
+            ('#', 'pound'),
+            (',', ''),
+            (':', ''),
+            ('“', ''),
+            ('”', ''),
+            ('.', ''),
+            ('o’', 'o-'),
+            ('’s', 's'),
+            ('’', '')
+        ]
+        for replacement in replacements:
+            prefix = prefix.replace(replacement[0], replacement[1])
         filename_base = './img/' + self.codepoint + '_' + prefix
         # go through the images
+        print('writing ' + self.codepoint + ' (' + prefix + ')')
         for image in self.image_data:
             # open the file for writing
             # this might bug if an /img/ directory doesn't exist!
             filename = filename_base + image['suffix']
             with open(filename, 'wb') as out_file:
                 out_file.write(image['data'])
-        # clear out the list
+        # clear out the list for the next row
         self.image_data = []
         return
 
@@ -90,33 +108,40 @@ class emoji_parser(HTMLParser):
             # add the vendor based on its column in the row
             self.image_count += 1
             suffix = '_'
-            if self.image_count == 1:
-                suffix += 'chart'
-            elif self.image_count == 2:
-                suffix += 'apple'
-            elif self.image_count == 3:
-                suffix += 'google'
-            elif self.image_count == 4:
-                suffix += 'twitter'
-            elif self.image_count == 5:
-                suffix += 'emoji_one'
-            elif self.image_count == 6:
-                suffix += 'facebook'
-            elif self.image_count == 7:
-                suffix += 'fb_messenger'
-            elif self.image_count == 8:
-                suffix += 'samsung'
-            elif self.image_count == 9:
-                suffix += 'windows'
-            elif self.image_count == 10:
-                suffix += 'gmail'
-            elif self.image_count == 11:
-                suffix += 'softbank'
-            elif self.image_count == 12:
-                suffix += 'docomo'
-            elif self.image_count == 13:
-                suffix += 'kddi'
-            suffix += '.png'
+            if self.image_count < 10:
+                if self.image_count == 1:
+                    suffix += 'chart'
+                elif self.image_count == 2:
+                    suffix += 'apple'
+                elif self.image_count == 3:
+                    suffix += 'google'
+                elif self.image_count == 4:
+                    suffix += 'twitter'
+                elif self.image_count == 5:
+                    suffix += 'emoji_one'
+                elif self.image_count == 6:
+                    suffix += 'facebook'
+                elif self.image_count == 7:
+                    suffix += 'fb_messenger'
+                elif self.image_count == 8:
+                    suffix += 'samsung'
+                elif self.image_count == 9:
+                    suffix += 'windows'
+                # add .png for modern emoji
+                suffix += '.png'
+            else:
+                # a legacy emoji
+                if self.image_count == 10:
+                    suffix += 'gmail'
+                elif self.image_count == 11:
+                    suffix += 'softbank'
+                elif self.image_count == 12:
+                    suffix += 'docomo'
+                elif self.image_count == 13:
+                    suffix += 'kddi'
+                # the old ones are actually gifs, even though the base64 is
+                # declared as an image/png
+                suffix += '.gif'
             # get the image's raw data and convert it from base64 to binary
             base64data = self.get_attr(attrs, 'src')
             if base64data.startswith('data:image/png;base64,'):
