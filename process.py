@@ -32,7 +32,7 @@ class emoji_parser(HTMLParser):
         # get actual values
         attr = next((attr for attr in attrs if attr[0] == name), None)
         if attr is None:
-            return attr
+            return None
         else:
             return attr[1]
 
@@ -44,15 +44,15 @@ class emoji_parser(HTMLParser):
         replacements = [
             (' ', '_'),
             ('&', 'and'),
-            ('*', 'asterisk'),
+            ('*', 'asterisk'), # keycap emoji
             ('#', 'pound'),
             (',', ''),
             (':', ''),
             ('“', ''),
             ('”', ''),
             ('.', ''),
-            ('o’', 'o-'),
-            ('’s', 's'),
+            ('o’', 'o-'), # o’clock
+            ('’s', 's'), # woman’s
             ('’', '')
         ]
         for replacement in replacements:
